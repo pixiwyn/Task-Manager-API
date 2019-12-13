@@ -1,39 +1,43 @@
 const request = require('supertest');
-const jwt = require('jsonwebtoken');
-const mongoose = require('mongoose');
-
 const app = require('../src/app');
 const User = require('../src/models/user');
+const { userOneId, userOne, setupDatabase } = require('./fixtures/db');
 
-const userOneId = new mongoose.Types.ObjectId();
-const userOne = {
-    _id: userOneId,
-    name: 'Kaitlyn',
-    email: 'pixiwyn@gmail.com',
-    password: 'start123',
-    tokens: [{
-        token: jwt.sign({_id: userOneId }, process.env.JWT_SECRET)
-    }]
-};
-
-beforeEach(async () => {
-    await User.deleteMany();
-    await new User(userOne).save();
-});
+beforeEach(setupDatabase);
 
 test('Should signup a new user', async () => {
-    await request(app).post('/users').send({
+    const response = await request(app).post('/users').send({
        name: 'Leon',
        email: 'kmarshall@tutamail.com',
        password: 'start123'
     }).expect(201);
+
+    // Assert DB was changed correctly
+    const user = await User.findById(response.body.user._id);
+    expect(user).not.toBeNull();
+
+    // Assert response is correct
+    expect(response.body).toMatchObject({
+        user: {
+            name: 'Leon',
+            email: 'kmarshall@tutamail.com'
+        },
+        token: user.tokens[0].token
+    });
+
+    // Assert Password is not stored in plain text
+    expect(user.password).not.toBe('start123');
 });
 
 test('Should login existing user', async () => {
-    await request(app).post('/users/login').send({
+    const response = await request(app).post('/users/login').send({
        email: userOne.email,
        password: userOne.password
     }).expect(200);
+
+    // Assert New Token is Saved in DB
+    const user = await User.findById(response.body.user._id);
+    expect(response.body.token).toBe(user.tokens[1].token);
 });
 
 test('Should not login non-existing user', async () => {
@@ -59,11 +63,15 @@ test('Should not get profile for unauthenticated user', async () => {
 });
 
 test('Should delete account for user', async () => {
-    await request(app)
+    const response = await request(app)
         .delete('/users/me')
         .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
         .send()
         .expect(200);
+
+    // Assert User is Removed from DB
+    const user = await User.findById(response.body._id);
+    expect(user).toBeNull();
 });
 
 test('Should not delete account for unauthenticated user', async () => {
@@ -72,3 +80,51 @@ test('Should not delete account for unauthenticated user', async () => {
         .send()
         .expect(401);
 });
+
+test('Should upload avatar image', async() => {
+    await request(app)
+        .post('/users/me/avatar')
+        .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+        .attach('avatar', 'tests/fixtures/profile-pic.jpg')
+        .expect(200);
+
+    // Check if anything is stored in DB
+    const user = await User.findById(userOneId);
+    expect(user.avatar).toEqual(expect.any(Buffer));
+});
+
+test('Should update valid user fields', async () => {
+    const response = await request(app)
+        .patch('/users/me')
+        .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+        .send({
+            name: 'Kaitlyn'
+        })
+        .expect(200);
+
+    // Check if user updated in DB
+    const user = await User.findById(userOneId);
+    expect(user.name).toBe(response.body.name);
+});
+
+test('Should not update invalid user fields', async () => {
+    const response = await request(app)
+        .patch('/users/me')
+        .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+        .send({
+            location: 'Denver, CO'
+        })
+        .expect(400);
+
+    // Check if user was not updated in DB
+    const user = await User.findById(userOneId);
+    expect(user.location).toBeUndefined();
+});
+
+//
+// User Test Ideas
+//
+// Should not signup user with invalid name/email/password
+// Should not update user if unauthenticated
+// Should not update user with invalid name/email/password
+// Should not delete user if unauthenticated
