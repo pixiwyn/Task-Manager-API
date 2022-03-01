@@ -3,7 +3,7 @@ Task Manager API built w/ NodeJS, Express, & MongoDB
 
 ## Documentation
 
-Task Manager API uses Postman for Documentation and Testing.
+Task Manager API uses Postman for Documentation and Maunual Testing.
 
 Localhost (Dev) Environment:
 https://documenter.getpostman.com/view/152083/SWE83c3r 
