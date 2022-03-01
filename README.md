@@ -1,5 +1,5 @@
 # Task-Manager-API
-Task Manager API built w/ NodeJS, Express, & MongoDB
+Example Task Manager API built w/ NodeJS, Express, & MongoDB. 
 
 ## Documentation
 
