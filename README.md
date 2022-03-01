@@ -2,7 +2,8 @@
 Task Manager API built w/ NodeJS, Express, & MongoDB
 
 ## Documentation
-https://documenter.getpostman.com/view/152083/SWE83c3r?version=latest
+
+https://documenter.getpostman.com/view/152083/SWE83c3r?version=latest - Outdated, will update soon. 
 
 ## Project Setup
 ```
@@ -19,7 +20,7 @@ npm run dev
 npm run start
 ```
 
-### Run Unit Tests
+### Run API Tests
 ```
 npm run test
 ```
