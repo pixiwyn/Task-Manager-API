@@ -4,7 +4,9 @@ const sharp = require('sharp');
 
 const User = require('../models/user');
 const auth = require('../middleware/auth');
-//const { sendWelcomeEmail, sendCancelEmail } = require('../emails/account');
+const { sendEmail } = require('../emails/emailService');
+const { welcomeEmail } = require('../emails/templates/welcomeEmail');
+const { cancelEmail } =  require('../emails/templates/cancelEmail');
 
 const router = new express.Router();
 
@@ -27,7 +29,7 @@ router.post('/users', async (req, res) => {
   try {
     await user.save();
 
-   // sendWelcomeEmail(user.email, user.name);
+   sendEmail(user.email, 'Welcome to Task Manager', welcomeEmail(user.name));
 
     const token = await user.generateAuthToken();
 
@@ -40,7 +42,9 @@ router.post('/users', async (req, res) => {
 router.delete('/users/me', auth, async (req, res) => {
   try {
     await req.user.remove();
-   // sendCancelEmail(req.user.email, req.user.name);
+
+    sendEmail(req.user.email, 'Account for Task Manager has been Canceled', cancelEmail(req.user.name));
+
     res.send(req.user);
   } catch (error) {
     res.status(500).send();
